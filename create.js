@@ -1,153 +1,133 @@
-var AWS = require('aws-sdk'); 
-var util = require('util');
-var async = require('async');
-var fs = require('fs');
+import fs from "fs";
+import {
+  SQSClient,
+  CreateQueueCommand,
+  GetQueueAttributesCommand,
+  SetQueueAttributesCommand,
+} from "@aws-sdk/client-sqs";
+import {
+  CreateTopicCommand,
+  SubscribeCommand,
+  SNSClient
+} from "@aws-sdk/client-sns";
 
-// configure AWS
-AWS.config.update({
-  'region': 'us-east-1'
-});
+(async () => {
+  const region = process.env.REGION || "sa-east-1";
+  const snsClient = new SNSClient({ region: region });
+  const sqsClient = new SQSClient({ region: region });
 
-var sns = new AWS.SNS();
-var sqs = new AWS.SQS();
-
-var config = {};
-
-function createTopic(cb) {
-  sns.createTopic({
-    'Name': 'demo'
-  }, function (err, result) {
-
-    if (err !== null) {
-      console.log(util.inspect(err));
-      return cb(err);
-    }
-    console.log(util.inspect(result));
-
-    config.TopicArn = result.TopicArn;
-
-    cb();
-  });
-}
-
-function createQueue(cb) {
-  sqs.createQueue({
-    'QueueName': 'demo'
-  }, function (err, result) {
-
-    if (err !== null) {
-      console.log(util.inspect(err));
-      return cb(err);
-    }
-
-    console.log(util.inspect(result));
-
-    config.QueueUrl = result.QueueUrl;
-
-    cb();
-
-  });
-
-}
-
-
-function getQueueAttr(cb) {
-  sqs.getQueueAttributes({
-    QueueUrl: config.QueueUrl,
-  AttributeNames: ["QueueArn"]
-  }, function (err, result) {
-
-    if (err !== null) {
-      console.log(util.inspect(err));
-      return cb(err);
-    }
-
-    console.log(util.inspect(result));
-
-    config.QueueArn = result.Attributes.QueueArn;
-
-    cb();
-
-  });
-
-}
-
-
-function snsSubscribe(cb) {
-  sns.subscribe({
-    'TopicArn': config.TopicArn,
-  'Protocol': 'sqs',
-  'Endpoint': config.QueueArn
-  }, function (err, result) {
-
-    if (err !== null) {
-      console.log(util.inspect(err));
-      return cb(err);
-    }
-
-    console.log(util.inspect(result));
-
-    cb();
-  });
-
-}
-
-function setQueueAttr(cb) {
-
-  var queueUrl = config.QueueUrl;
-  var topicArn = config.TopicArn;
-  var sqsArn = config.QueueArn;
-
-  var attributes = {
-    "Version": "2008-10-17",
-    "Id": sqsArn + "/SQSDefaultPolicy",
-    "Statement": [{
-      "Sid": "Sid" + new Date().getTime(),
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "*"
-      },
-      "Action": "SQS:SendMessage",
-      "Resource": sqsArn,
-      "Condition": {
-        "ArnEquals": {
-          "aws:SourceArn": topicArn
-        }
-      }
-    }
-    ]
+  const config = {
+    sns: { TopicArn: null, SubscriptionArn: null },
+    sqs: { QueueUrl: null, QueueArn: null },
   };
 
-  sqs.setQueueAttributes({
-    QueueUrl: queueUrl,
-    Attributes: {
-      'Policy': JSON.stringify(attributes)
+  const createTopic = async () => {
+    const params = { Name: "demo" }; //TOPIC_NAME
+    try {
+      const data = await snsClient.send(new CreateTopicCommand(params));
+      config.sns.TopicArn = data.TopicArn;
+      return data.TopicArn;
+    } catch (err) {
+      console.log("Error", err.stack);
     }
-  }, function (err, result) {
+  };
 
-    if (err !== null) {
-      console.log(util.inspect(err));
-      return cb(err);
+  const createQueue = async () => {
+    const params = {
+      QueueName: "demo",
+    };
+    const command = new CreateQueueCommand(params);
+    try {
+      const data = await sqsClient.send(command);
+      config.sqs.QueueUrl = data.QueueUrl;
+      const { QueueArn } = await getQueueAttr();
+      config.sqs.QueueArn = QueueArn;
+      return data;
+    } catch (err) {
+      console.log("Error", err.stack);
     }
+  };
 
-    console.log(util.inspect(result));
-
-    cb();
-  });
-
-}
-
-function writeConfigFile(cb) {
-  fs.writeFile('config.json', JSON.stringify(config, null, 4), function(err) {
-    if(err) {
-      return cb(err);
+  const getQueueAttr = async () => {
+    const params = {
+      QueueUrl: config.sqs.QueueUrl,
+      AttributeNames: ["All"],
+    };
+    const command = new GetQueueAttributesCommand(params);
+    try {
+      const data = await sqsClient.send(command);
+      return data.Attributes;
+    } catch (err) {
+      console.log("Error", err.stack);
     }
+  };
 
-    console.log("config saved to config.json");
-    cb();
-  }); 
+  const snsSubscribe = async () => {
+    const params = {
+      TopicArn: config.sns.TopicArn,
+      Protocol: "sqs",
+      Endpoint: config.sqs.QueueArn,
+    };
+    try {
+      const { SubscriptionArn } = await snsClient.send(
+        new SubscribeCommand(params)
+      );
+      config.sns.SubscriptionArn = SubscriptionArn;
+      return SubscriptionArn;
+    } catch (err) {
+      console.log("Error", err.stack);
+    }
+  };
 
-}
+  const setQueueAttr = async () => {
+    const queueUrl = config.sqs.QueueUrl;
+    const topicArn = config.sns.TopicArn;
+    const sqsArn = config.sqs.QueueArn;
 
-async.series([createTopic, createQueue, getQueueAttr, snsSubscribe, setQueueAttr, writeConfigFile]);
+    const attributes = {
+      Version: "2008-10-17",
+      Id: sqsArn + "/SQSDefaultPolicy",
+      Statement: [
+        {
+          Sid: "Sid" + new Date().getTime(),
+          Effect: "Allow",
+          Principal: {
+            AWS: "*",
+          },
+          Action: "SQS:SendMessage",
+          Resource: sqsArn,
+          Condition: {
+            ArnEquals: {
+              "aws:SourceArn": topicArn,
+            },
+          },
+        },
+      ],
+    };
 
+    const params = {
+      QueueUrl: queueUrl,
+      Attributes: {
+        Policy: JSON.stringify(attributes),
+      },
+    };
+
+    const command = new SetQueueAttributesCommand(params);
+    try {
+      const data = await sqsClient.send(command);
+      return data.Attributes;
+    } catch (err) {
+      console.log("Error", err.stack);
+    }
+  };
+
+  await createTopic();
+  await createQueue();
+  await snsSubscribe();
+  await setQueueAttr();
+
+  await fs.writeFileSync("config.json", JSON.stringify(config));
+
+  console.log(config);
+
+})();

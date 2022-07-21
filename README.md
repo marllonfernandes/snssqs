@@ -24,18 +24,23 @@ npm install
 ## Create Topic and Queue
 
 ````
-AWS_PROFILE=snssqs node create.js 
+npm run deploy or yarn deploy
 ````
 
 ## Run
 
 ### Publish
 ````
-AWS_PROFILE=snssqs node publish.js 
+npm run pub or yarn pub
 ````
 
 ### Consume
 ````
-AWS_PROFILE=snssqs node consume.js 
+npm run sub or yarn sub
+````
+
+### Destroy
+````
+npm run destroy or yarn destroy
 ````
 
