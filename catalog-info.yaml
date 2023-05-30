@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: snssqs
+  annotations:
+    github.com/project-slug: marllonfernandes/snssqs
+spec:
+  type: other
+  lifecycle: unknown
+  owner: ti-team-servicos
