@@ -2,9 +2,15 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: snssqs
+  description: This is an example of how to use AWS SNS and SQS to publish messages to a topic(SNS) and consume them from a queue(SQS) using NodeJS and the aws-sdk.
+  tags:
+    - nodejs
+    - aws
+    - sqs
+    - sns
   annotations:
     github.com/project-slug: marllonfernandes/snssqs
 spec:
-  type: other
-  lifecycle: unknown
+  type: service
+  lifecycle: experimental
   owner: ti-team-servicos
