@@ -18,9 +18,7 @@ metadata:
       title: Documentation
       icon: description
 spec:
-  type: openapi
+  type: service
   lifecycle: experimental
   owner: ti-team-servicos
   system: snssqs
-  definition:
-    $text: https://github.com/marllonfernandes/snssqs/blob/793221ebf946b0872e6cb9954f5c8e95fee225de/openapi.yaml
