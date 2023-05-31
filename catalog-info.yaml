@@ -3,6 +3,9 @@ kind: Component
 metadata:
   name: snssqs
   description: This is an example of how to use AWS SNS and SQS to publish messages to a topic(SNS) and consume them from a queue(SQS) using NodeJS and the aws-sdk.
+  labels:
+    nodeVersion: >=16.0.0
+    category: integration
   tags:
     - nodejs
     - aws
@@ -10,7 +13,12 @@ metadata:
     - sns
   annotations:
     github.com/project-slug: marllonfernandes/snssqs
+  links:
+    - url: https://docs.aws.amazon.com/pt_br/sns/latest/dg/sns-send-message-to-sqs-cross-account.html
+      title: Documentation
+      icon: dashboard
 spec:
   type: service
   lifecycle: experimental
   owner: ti-team-servicos
+  system: snssqs
