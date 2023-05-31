@@ -4,7 +4,7 @@ metadata:
   name: snssqs
   description: This is an example of how to use AWS SNS and SQS to publish messages to a topic(SNS) and consume them from a queue(SQS) using NodeJS and the aws-sdk.
   labels:
-    nodeVersion: >=16.0.0
+    version: 0.1.0
     category: integration
   tags:
     - nodejs
