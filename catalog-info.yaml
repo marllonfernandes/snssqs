@@ -16,7 +16,7 @@ metadata:
   links:
     - url: https://docs.aws.amazon.com/pt_br/sns/latest/dg/sns-send-message-to-sqs-cross-account.html
       title: Documentation
-      icon: dashboard
+      icon: description
 spec:
   type: service
   lifecycle: experimental
